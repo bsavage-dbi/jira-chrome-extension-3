@@ -85,8 +85,10 @@ function createHTMLElementResult(response){
   response.issues.forEach(function(issue){
     var fields = issue.fields;
     var status = fields.status;
+    var assignee = fields.assignee;
+    console.log(fields)
     var item = document.createElement('li');
-    item.innerHTML = 'key-'+issue.key+' ,summury'+fields.summary+'description-'+status.description;
+    item.innerHTML = 'key-'+issue.key+' ,summury-'+fields.summary+' description-'+status.description+' <img src='+status.iconUrl+'/>';
     list.appendChild(item);
   });
   return list.outerHTML;
