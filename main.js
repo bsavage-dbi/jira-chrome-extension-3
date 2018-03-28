@@ -26,10 +26,8 @@ async function getQueryResults(s, callback, errorCallback) {
 function make_request(url, responseType) {
   return new Promise(function(resolve, reject) {
     var req = new XMLHttpRequest();
-    req.open('GET', url, true);
-    
+    req.open('GET', url);
     req.responseType = responseType;
-
     req.onload = function() {
       var response = responseType ? req.response : req.responseXML;
       if(response && response.errorMessages && response.errorMessages.length > 0){
@@ -82,14 +80,8 @@ function createHTMLElementResult(response){
 // Create HTML output to display the search results.
 // results.json in the "json_results" folder contains a sample of the API response
 // hint: you may run the application as well if you fix the bug. 
-// 
-  //var jsonResultDiv = document.getElementById('search-results');
-  //jsonResultDiv.innerHTML = response;
-  //jsonResultDiv.hidden = false;
-
- 
+//  
   var list = document.createElement('ul');
-  console.log(response)
   response.issues.forEach(function(issue){
     var fields = issue.fields;
     var status = fields.status;
@@ -97,15 +89,8 @@ function createHTMLElementResult(response){
     item.innerHTML = 'key-'+issue.key+' ,summury'+fields.summary+'description-'+status.description;
     list.appendChild(item);
   });
- 
-
-
- 
-  console.log(response)
-  
   return list.outerHTML;
   //return '<p>There may be results, but you must read the response and display them.</p>';
-  
 }
 
 // utility 
@@ -117,16 +102,14 @@ function domify(str){
 async function checkProjectExists(){
     try {
       return await make_request("https://jira.secondlife.com/rest/api/2/project/SUN", "json");
-      //return make_request("https://jira.secondlife.com/rest/api/2/project/SUN", "json");
+      
     } catch (errorMessage) {
-      document.getElementById('status').innerHTML = 'ERROR. ' + errorMessage;
-      document.getElementById('status').hidden = false;
+      logErrorMessage('status', errorMessage);
     }
 }
 
 // Setup
 document.addEventListener('DOMContentLoaded', function() {
-  console.log("Add event listner is invoking")
   // if logged in, setup listeners
     checkProjectExists().then(function() {
       //load saved options
@@ -136,22 +119,22 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById("query").onclick = function(){
         // build query
         buildJQL(function(url) {
-          document.getElementById('status').innerHTML = 'Performing JIRA search for ' + url;
-          document.getElementById('status').hidden = false;  
+          setInnerHtml('status', 'Performing JIRA search for ' + url);
+          toggle('status', false);
           // perform the search
           getQueryResults(url, function(return_val) {
             // render the results
             console.log("after render html method"+return_val)
-            document.getElementById('status').innerHTML = 'Query term: ' + url + '\n';
-            document.getElementById('status').hidden = false;
+  
+            setInnerHtml('status', 'Query term: ' + url + '\n');
+            toggle('status', false);
             
             var jsonResultDiv = document.getElementById('query-result');
             jsonResultDiv.innerHTML = return_val;
             jsonResultDiv.hidden = false;
 
           }, function(errorMessage) {
-              document.getElementById('status').innerHTML = 'ERROR. ' + errorMessage;
-              document.getElementById('status').hidden = false;
+            logErrorMessage('status', errorMessage);
           });
         });
       }
@@ -160,8 +143,8 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById("feed").onclick = function(){   
         // get the xml feed
         getJIRAFeed(function(url, xmlDoc) {
-          document.getElementById('status').innerHTML = 'Activity query: ' + url + '\n';
-          document.getElementById('status').hidden = false;
+          setInnerHtml('status', 'Activity query: ' + url + '\n');
+          toggle('status', false);
 
           // render result
           var feed = xmlDoc.getElementsByTagName('feed');
@@ -180,20 +163,33 @@ document.addEventListener('DOMContentLoaded', function() {
           if(list.childNodes.length > 0){
             feedResultDiv.innerHTML = list.outerHTML;
           } else {
-            document.getElementById('status').innerHTML = 'There are no activity results.';
-            document.getElementById('status').hidden = false;
+            setInnerHtml('status', 'There are no activity results.');
+            toggle('status', false);
           }
           
           feedResultDiv.hidden = false;
 
         }, function(errorMessage) {
-          document.getElementById('status').innerHTML = 'ERROR. ' + errorMessage;
-          document.getElementById('status').hidden = false;
+          logErrorMessage('status', errorMessage);
         });    
       };        
 
     }).catch(function(errorMessage) {
-        document.getElementById('status').innerHTML = 'ERROR. ' + errorMessage;
-        document.getElementById('status').hidden = false;
+      logErrorMessage('status', errorMessage);
     });   
 });
+
+//Set inner html content
+function setInnerHtml(id, message){
+  document.getElementById(id).innerHTML=message;
+}
+
+// Set toggle id
+function toggle(id, value){
+  document.getElementById(id).hidden = value;
+}
+
+function logErrorMessage(id, errorMessage){
+  setInnerHtml(id, 'ERROR. ' + errorMessage);
+  toggle(id, false);
+}
